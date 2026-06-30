@@ -103,7 +103,7 @@ class Agent:
         if self.groq_api_key:
             from groq import Groq
             self.groq_client = Groq(api_key=self.groq_api_key)
-            self.model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+            self.model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
             self.provider = "groq"
         else:
             self.gemini_client = genai.Client(api_key=self.gemini_api_key)
