@@ -97,42 +97,79 @@ class Agent:
 
     def __init__(self, retriever: Retriever) -> None:
         self.retriever = retriever
-        api_key = os.environ.get("GEMINI_API_KEY", "")
-        self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.0-flash"
+        self.gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
+        self.groq_api_key = os.environ.get("GROQ_API_KEY", "")
 
-    def _call_gemini(
+        if self.groq_api_key:
+            from groq import Groq
+            self.groq_client = Groq(api_key=self.groq_api_key)
+            self.model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+            self.provider = "groq"
+        else:
+            self.gemini_client = genai.Client(api_key=self.gemini_api_key)
+            self.model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+            self.provider = "gemini"
+
+    def _call_llm(
         self,
         messages: list[dict],
         system: str,
         temperature: float = 0.3,
+        max_retries: int = 2,
     ) -> str:
-        """Call Gemini and return the text response."""
-        contents = []
-        for msg in messages:
-            role = "user" if msg["role"] == "user" else "model"
-            contents.append(
-                types.Content(
-                    role=role,
-                    parts=[types.Part.from_text(text=msg["content"])],
-                )
-            )
+        """Call the active LLM provider (Groq or Gemini)."""
+        import time as _time
+        import logging
 
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                temperature=temperature,
-                max_output_tokens=2048,
-                response_mime_type="application/json",
-            ),
-        )
-        return response.text
+        for attempt in range(max_retries + 1):
+            try:
+                if self.provider == "groq":
+                    # Groq API Format
+                    groq_msgs = [{"role": "system", "content": system}]
+                    groq_msgs.extend([{"role": m["role"], "content": m["content"]} for m in messages])
+                    response = self.groq_client.chat.completions.create(
+                        model=self.model,
+                        messages=groq_msgs,
+                        temperature=temperature,
+                        max_tokens=2048,
+                        response_format={"type": "json_object"},
+                    )
+                    return response.choices[0].message.content
+                else:
+                    # Gemini API Format
+                    contents = []
+                    for msg in messages:
+                        role = "user" if msg["role"] == "user" else "model"
+                        contents.append(
+                            types.Content(
+                                role=role,
+                                parts=[types.Part.from_text(text=msg["content"])],
+                            )
+                        )
+                    response = self.gemini_client.models.generate_content(
+                        model=self.model,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system,
+                            temperature=temperature,
+                            max_output_tokens=2048,
+                            response_mime_type="application/json",
+                        ),
+                    )
+                    return response.text
+            except Exception as e:
+                if "429" in str(e) and attempt < max_retries:
+                    wait = 2 ** attempt * 5
+                    logging.getLogger("shl_recommender").warning(
+                        f"Rate limited by {self.provider}, retrying in {wait}s (attempt {attempt+1}/{max_retries})"
+                    )
+                    _time.sleep(wait)
+                else:
+                    raise
 
     def _analyze_intent(self, messages: list[dict]) -> dict:
         """Use LLM to extract structured intent from conversation."""
-        raw = self._call_gemini(messages, RETRIEVAL_PROMPT, temperature=0.1)
+        raw = self._call_llm(messages, RETRIEVAL_PROMPT, temperature=0.1)
         try:
             return json.loads(raw)
         except json.JSONDecodeError:
@@ -291,7 +328,7 @@ class Agent:
         )
 
         # Step 5: Call LLM for the response
-        raw = self._call_gemini(messages, augmented_system, temperature=0.3)
+        raw = self._call_llm(messages, augmented_system, temperature=0.3)
 
         try:
             response = json.loads(raw)

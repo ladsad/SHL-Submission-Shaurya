@@ -84,14 +84,21 @@ POST /chat → Intent Analyzer (LLM call #1) → Hybrid Retrieval → Response G
 ---
 
 ## Phase 2 — Testing & Evaluation
-**Date:** (upcoming)
+**Date:** 2026-06-30
 
-### Planned
-- [ ] Verify catalog loads correctly (377 assessments, test_types derived)
-- [ ] Test retriever against known queries from conversation traces
-- [ ] Run the API locally, test with sample conversation flows
+### Actions & Findings
+1. Built `test_smoke.py` — verified catalog loads and hybrid retriever returns expected results (Java for Java queries, OPQ for leadership, Contact Center sim for sim queries).
+2. Encountered `429 RESOURCE_EXHAUSTED` with Gemini API free tier (daily limit 0).
+3. **Pivoted backend:** Refactored `agent.py` to support `GROQ_API_KEY` alongside `GEMINI_API_KEY`.
+4. Using Groq's `llama-3.3-70b-versatile` as the active LLM fallback.
+5. Built `test_e2e.py` and successfully ran 4 core behavior probes against the active API:
+    - Vague query clarification (no turn-1 recs)
+    - Specific query (immediate recommendation)
+    - Off-topic refusal (no recommendations)
+    - Multi-turn refinement (maintaining context and updating shortlist)
+
+### Planned Next Steps
 - [ ] Compute Recall@10 against all 10 public traces
-- [ ] Test behavior probes: off-topic refusal, no turn-1 recs for vague queries, refinement, comparison
 - [ ] Latency benchmarking (must be < 30s per call)
 
 ---
