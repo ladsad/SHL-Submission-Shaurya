@@ -1,0 +1,9 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+pydantic==2.11.4
+google-genai==1.18.0
+numpy==2.2.6
+scikit-learn==1.7.0
+sentence-transformers==4.1.0
+httpx==0.28.1
+python-dotenv==1.1.0
