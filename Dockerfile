@@ -14,8 +14,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY data/ data/
 COPY src/ src/
 
-# Expose the port (Render uses PORT env var, defaulting to 8000 here)
-EXPOSE 8000
+# Expose the port (HuggingFace Spaces uses 7860 by default)
+EXPOSE 7860
 
 # Command to run the application
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "7860"]
