@@ -6,6 +6,5 @@ dist/
 build/
 .venv/
 venv/
-embeddings_cache/
 Documentation/download_catalog.py
 Documentation/sample_conversations.zip
