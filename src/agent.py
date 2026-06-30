@@ -105,10 +105,15 @@ class Agent:
             self.groq_client = Groq(api_key=self.groq_api_key)
             self.model = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
             self.provider = "groq"
-        else:
+        elif self.gemini_api_key:
             self.gemini_client = genai.Client(api_key=self.gemini_api_key)
             self.model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
             self.provider = "gemini"
+        else:
+            raise RuntimeError(
+                "No API keys configured! Please set GROQ_API_KEY or GEMINI_API_KEY "
+                "in your environment variables or HuggingFace Secrets."
+            )
 
     def _call_llm(
         self,
