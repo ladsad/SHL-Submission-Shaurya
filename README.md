@@ -1,3 +1,13 @@
+---
+title: SHL Assessment Recommender
+emoji: 🧠
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # SHL Assessment Recommender API
 
 A stateless, conversational FastAPI service that recommends SHL assessments based on a provided product catalog. Built using a dual-provider LLM backend (Groq/Gemini), a custom hybrid RAG retriever, and strict JSON-schema enforcement for conversational UI integration.
