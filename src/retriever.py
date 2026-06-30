@@ -65,6 +65,13 @@ class Retriever:
         if cache_path.exists():
             self._embeddings = pickle.loads(cache_path.read_bytes())
             return
+            
+        # Fallback for OS newline differences (Windows vs Linux hash mismatch)
+        if CACHE_DIR.exists():
+            pkl_files = list(CACHE_DIR.glob("*.pkl"))
+            if pkl_files:
+                self._embeddings = pickle.loads(pkl_files[0].read_bytes())
+                return
 
         texts = [a.embedding_text for a in self.catalog]
         self._embeddings = self._model.encode(texts, normalize_embeddings=True)
